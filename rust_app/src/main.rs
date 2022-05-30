@@ -13,49 +13,46 @@ use fuel_gql_client::{
     fuel_tx::{Address, AssetId, Input, Output, Receipt, UtxoId, Witness},
 };
 use std::net::SocketAddr;
-//use fuel_vm::consts::*;
 use fuel_vm::prelude::Opcode;
 use fuel_vm::consts::*;
 
+async fn configure(provider: Provider) -> (Wallet, Wallet) {
+
+    let secret_key1 = 
+        SecretKey::from_str("0x862512a2363db2b3a375c0d4bbbd27172180d89f23f2e259bac850ab02619301")
+            .unwrap();
+
+    let secret_key2 =
+        SecretKey::from_str("0x37fa81c84ccd547c30c176b118d5cb892bdb113e8e80141f266519422ef9eefd")
+            .unwrap();
+
+    
+    let mut wallet = Wallet::new_from_private_key(secret_key1, None);
+    let mut wallet2 = Wallet::new_from_private_key(secret_key2, None);
+
+    wallet.set_provider(provider.clone());
+    wallet2.set_provider(provider.clone());
+    (wallet, wallet2)
+    
+}
+
 #[tokio::main]
 async fn main() {
-    // Local Client 
-    let client_details = "127.0.0.1:4000";
-    let addr: SocketAddr = client_details.parse().expect("Error");
+    let final_receiver = "0xde97d8624a438121b86a1956544bd72ed68cd69f2c99555b08b1e8c51ffd511c";
 
-    // Config for internal client 
     let mut config = Config::local_node();
     config.predicates = true;
     config.utxo_validation = true;
 
     let srv = FuelService::new_node(config).await.unwrap();
-    // Unconmment line if vm_backtrace isn't needed 
-    //let client = FuelClient::from(srv.bound_address);
-    let client = FuelClient::from(addr);
+    let client = FuelClient::from(srv.bound_address);
     let provider = Provider::new(client.clone());
-
-    let secret_key = 
-        SecretKey::from_str("0x862512a2363db2b3a375c0d4bbbd27172180d89f23f2e259bac850ab02619301")
-            .unwrap();
-
-    let secret_key_s =
-        SecretKey::from_str("0x37fa81c84ccd547c30c176b118d5cb892bdb113e8e80141f266519422ef9eefd")
-            .unwrap();
-
     
-    let final_receiver = "0xde97d8624a438121b86a1956544bd72ed68cd69f2c99555b08b1e8c51ffd511c";
+    let (wallet, wallet2) = configure(provider.clone()).await;
+    // Lock coin 
 
-    
-    // 
-    let mut wallet = Wallet::new_from_private_key(secret_key, None);
-    let mut wallet_s = Wallet::new_from_private_key(secret_key_s, None);
-
-    wallet.set_provider(provider.clone());
-    wallet_s.set_provider(provider.clone());
     let amount = wallet.get_asset_balance(&AssetId::default()).await.unwrap();
     let wallet_coins = wallet.get_asset_inputs_for_amount(AssetId::default(), amount, 0).await.unwrap();
-    //println!("{}", wallet.address());
-    //println!("`{:?}`", wallet_coins);
     // We load the predicate_code and hash it to get the predicate root hash
     let predicate_code = fs::read("../predicate/out/debug/single-sig.bin").unwrap();
     let predicate_hash = (*Contract::root_from_code(&predicate_code)).into();
@@ -104,7 +101,7 @@ async fn main() {
             AssetId::default(),
             0,
             predicate_code.clone(),
-            vec![1],
+            vec![0],
         );
         inputs.push(input_coin);
         tot_amount += coin.amount.0;
@@ -134,12 +131,12 @@ async fn main() {
         vec![new_output_coin, output_change],
         vec![],
     );
-    let asset_id = AssetId::default();
-    //let signature = wallet.sign_transaction(&mut new_tx).await.unwrap(); 
-    let sign_s =  wallet_s.sign_transaction(&mut new_tx).await.unwrap(); 
-    tx_receipts = provider.send_transaction(&new_tx).await.unwrap();
-    println!("{:?}", tx_receipts);
     //println!("{:?}", new_tx);
+    let asset_id = AssetId::default();
+    let signature = wallet.sign_transaction(&mut new_tx).await.unwrap(); 
+    //let sign_s =  wallet_s.sign_transaction(&mut new_tx).await.unwrap(); 
+    tx_receipts = provider.send_transaction(&new_tx).await.unwrap();
+    //println!("{:?}", tx_receipts);
     /*
     let balance_receiver = client.balance(final_receiver, 
             Some(format!("{:#x}", asset_id).as_str())).await.unwrap();

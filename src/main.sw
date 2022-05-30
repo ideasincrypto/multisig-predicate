@@ -74,7 +74,7 @@ fn main() -> bool {
             one_address_mask = true;
             valid_counter = valid_counter + 1;
         } else if ((raw_addresses[2] == ec_recover_address(sig1, msg_hash)) && !second_address_mask) {
-            one_address_mask = true;
+            second_address_mask = true;
             valid_counter = valid_counter + 1;
         }
     }

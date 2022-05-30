@@ -14,14 +14,6 @@ pub fn tx_hash() -> b256 {
     }
 }
 
-fn get_predicate_data_length() -> u64 {
-    asm(r1, r2) {
-        subi r1 is i8;
-        lw r2 r1 i0;
-        r2: u64
-    }
-}
-
 fn get_signature(index: u64) -> B512 {
   
     asm(r1: index, r2, r3) {

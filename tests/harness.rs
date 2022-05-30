@@ -79,7 +79,7 @@ async fn send_coins_to_predicate_hash(asset_id: AssetId, wallet: Wallet, provide
 }
 
 
-async fn craft_predicate_spending_tx(receiver_address: Address, asset_id: AssetId, amount_to_spend: u64, provider: Provider, predicate_data: &mut [u8]) -> Transaction {
+async fn craft_predicate_spending_tx(receiver_address: Address, asset_id: AssetId, amount_to_spend: u64, provider: Provider) -> Transaction {
     let predicate_code = fs::read("./out/debug/multisignature_predicate.bin").unwrap();
     let predicate_hash = (*Contract::root_from_code(&predicate_code)).into();
     let utxo_predicate_hash = provider.get_spendable_coins(&predicate_hash, asset_id, amount_to_spend).await.unwrap();
@@ -94,7 +94,7 @@ async fn craft_predicate_spending_tx(receiver_address: Address, asset_id: AssetI
             asset_id,
             0,
             predicate_code.clone(),
-            predicate_data.to_vec(),
+            vec![],
         );
         inputs.push(input_coin);
         tot_amount += coin.amount.0;
@@ -152,8 +152,7 @@ async fn single_signer() {
     let mut predicate_balance = provider.get_asset_balance(&predicate_hash, asset_id, ).await.unwrap();
 
     assert_eq!(predicate_balance, amount_to_predicate);
-    let mut predicate_data = vec![0];
-    let mut predicate_spending_tx = craft_predicate_spending_tx(receiver_address, asset_id, predicate_balance, provider.clone(), &mut predicate_data).await;
+    let mut predicate_spending_tx = craft_predicate_spending_tx(receiver_address, asset_id, predicate_balance, provider.clone()).await;
     let receiver_balance_before = provider.get_asset_balance(&receiver_address, asset_id).await.unwrap();
 
     // Execute tx
@@ -194,8 +193,7 @@ async fn dual_signer_initial_and_second() {
     let mut predicate_balance = provider.get_asset_balance(&predicate_hash, asset_id, ).await.unwrap();
 
     assert_eq!(predicate_balance, amount_to_predicate);
-    let mut predicate_data = vec![0, 1];
-    let mut predicate_spending_tx = craft_predicate_spending_tx(receiver_address, asset_id, predicate_balance, provider.clone(), &mut predicate_data).await;
+    let mut predicate_spending_tx = craft_predicate_spending_tx(receiver_address, asset_id, predicate_balance, provider.clone()).await;
     let receiver_balance_before = provider.get_asset_balance(&receiver_address, asset_id).await.unwrap();
 
     // Execute tx
@@ -236,8 +234,7 @@ async fn dual_signer_initial_and_second_reverse_order() {
     let mut predicate_balance = provider.get_asset_balance(&predicate_hash, asset_id, ).await.unwrap();
 
     assert_eq!(predicate_balance, amount_to_predicate);
-    let mut predicate_data = vec![0, 1];
-    let mut predicate_spending_tx = craft_predicate_spending_tx(receiver_address, asset_id, predicate_balance, provider.clone(), &mut predicate_data).await;
+    let mut predicate_spending_tx = craft_predicate_spending_tx(receiver_address, asset_id, predicate_balance, provider.clone()).await;
     let receiver_balance_before = provider.get_asset_balance(&receiver_address, asset_id).await.unwrap();
 
     // Execute tx
@@ -288,8 +285,7 @@ async fn dual_signer_with_one_wrong_wallet() {
     let mut predicate_balance = provider.get_asset_balance(&predicate_hash, asset_id, ).await.unwrap();
 
     assert_eq!(predicate_balance, amount_to_predicate);
-    let mut predicate_data = vec![0, 1];
-    let mut predicate_spending_tx = craft_predicate_spending_tx(receiver_address, asset_id, predicate_balance, provider.clone(), &mut predicate_data).await;
+    let mut predicate_spending_tx = craft_predicate_spending_tx(receiver_address, asset_id, predicate_balance, provider.clone()).await;
     let receiver_balance_before = provider.get_asset_balance(&receiver_address, asset_id).await.unwrap();
 
     // Execute tx
@@ -339,8 +335,7 @@ async fn dual_signer_with_same_wallet_twice() {
     let mut predicate_balance = provider.get_asset_balance(&predicate_hash, asset_id, ).await.unwrap();
 
     assert_eq!(predicate_balance, amount_to_predicate);
-    let mut predicate_data = vec![0, 1];
-    let mut predicate_spending_tx = craft_predicate_spending_tx(receiver_address, asset_id, predicate_balance, provider.clone(), &mut predicate_data).await;
+    let mut predicate_spending_tx = craft_predicate_spending_tx(receiver_address, asset_id, predicate_balance, provider.clone()).await;
     let receiver_balance_before = provider.get_asset_balance(&receiver_address, asset_id).await.unwrap();
 
     // Execute tx
@@ -389,8 +384,7 @@ async fn triple_signer() {
     let mut predicate_balance = provider.get_asset_balance(&predicate_hash, asset_id, ).await.unwrap();
 
     assert_eq!(predicate_balance, amount_to_predicate);
-    let mut predicate_data = vec![0, 1];
-    let mut predicate_spending_tx = craft_predicate_spending_tx(receiver_address, asset_id, predicate_balance, provider.clone(), &mut predicate_data).await;
+    let mut predicate_spending_tx = craft_predicate_spending_tx(receiver_address, asset_id, predicate_balance, provider.clone()).await;
     let receiver_balance_before = provider.get_asset_balance(&receiver_address, asset_id).await.unwrap();
 
     // Execute tx
@@ -441,8 +435,7 @@ async fn triple_signer_reverse_order() {
     let mut predicate_balance = provider.get_asset_balance(&predicate_hash, asset_id, ).await.unwrap();
 
     assert_eq!(predicate_balance, amount_to_predicate);
-    let mut predicate_data = vec![0, 1];
-    let mut predicate_spending_tx = craft_predicate_spending_tx(receiver_address, asset_id, predicate_balance, provider.clone(), &mut predicate_data).await;
+    let mut predicate_spending_tx = craft_predicate_spending_tx(receiver_address, asset_id, predicate_balance, provider.clone()).await;
     let receiver_balance_before = provider.get_asset_balance(&receiver_address, asset_id).await.unwrap();
 
     // Execute tx

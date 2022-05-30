@@ -15,7 +15,8 @@ The predicate present in this repository is a 2 out of 3 multisignature predicat
 To see the predicate in action, it is possible to run the tests. The tests are checking for the correct behavior in different conditions, including signing in different order, and signing twice with the same key. 
 
 ### Future Developments
-The code in the predicate is a WIP because it is not efficient. It is also assumes that all witnesses are signatures which are required to verify the predicate, but that doesn't have to be true: a tx could have a standard pay-to-address coin in addition to a pay-to-hash coin, which would require a different strategy. For example, predicates allow predicate data to be passed in the verification.
+The code in the predicate is a WIP because it is not efficient. It is also assumes that all witnesses are signatures which are required to verify the predicate, but that doesn't have to be true: a transaction could have a standard pay-to-address coin in addition to a pay-to-hash coin which would require a different strategy. 
+For example, predicates allow predicate data to be passed in the verification and we could pass the witnesses indexes of right signatures for spending that input as predicate data.
 
-Since during predicate verification loops are not allowed, it is impossible to build efficient (in term of bytecode lenght) predicates for many keys. In fact, even the bytecode for the verification of 3 keys is quite long (>1000 bytes). Therefore, I believe a specialized opcode would be helpful. 
+Since during predicate verification loops are not allowed, it is impossible to build efficient (in term of bytecode lenght) predicates for many keys. In fact, even the bytecode for the verification of 3 keys is quite long (>1000 bytes). Therefore, I believe a specialized opcode would be helpful to build more efficient multisignature predicates.
 

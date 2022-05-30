@@ -4,9 +4,12 @@ The code presented in this repository allows native multisignature transactions 
 ### Why build a multisignature predicate?
 Multisignature predicates are an important building block for building more complex protocols such as payment channels/networks, as they allow a quick spending path when all the parties involved are cooperating, but also allow native escrow.
 As Fuel VM also support contracts, it would be possible to build a contract based multisignature wallet, but predicates are much cheaper as their verification doesn't require gas, thanks to additional constraints on the Fuel VM to avoid node resource exhaustion by attackers.
-## Comments on the code
+
+### Comments on the code
 The predicate present in this repository is a 2 out of 3 multisignature predicate: i.e it requires only 2 out of the 3 signatures made by any of the 3 signing addresses embedded in the predicate.
 To see the predicate in action, it is possible to run the tests. The tests are checking for the correct behavior in different conditions, including signing in a different order and signing twice with the same key.
-## Future Developments
+
+### Future Developments
 The code in the predicate is a WIP because it is not efficient. It assumes that all witnesses are signatures that are required to verify the predicate, but that doesn't have to be true: a transaction could have a standard pay-to-address coin in addition to a pay-to-hash coin which would require a different strategy. For example, predicates allow predicate data to be passed in the verification and we could pass the witnesses's indexes of right signatures for spending that input as predicate data.
-Since during predicate verification loops are not allowed, it is impossible to build efficient (in terms of bytecode length) predicates for many keys. Even the bytecode for the verification of 3 keys is quite long (>1000 bytes). Therefore, I believe a specialized opcode would be helpful to build more efficient multisignature predicates.
+
+Since during predicate verification loops are not allowed, it is impossible to build efficient (in terms of bytecode length) predicates for many keys. Even the bytecode for the verification of 3 keys is quite long (almost 1000 bytes). Therefore, I believe a specialized opcode would be helpful to build more efficient multisignature predicates.

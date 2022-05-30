@@ -353,6 +353,107 @@ async fn dual_signer_with_same_wallet_twice() {
 }
 
 #[tokio::test]
+#[should_panic(expected = "InvalidPredicate")]
+async fn dual_signer_with_same_wallet_twice_second() {
+    let receiver_address = Address::from_str("0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e").unwrap();
+
+    let wrong_secret_key = 
+        SecretKey::from_str("0xde97d8624a438121b86a1956544bd72ed68cd69f2c99555b08b1e8c51ffd511c")
+            .unwrap();
+
+    let mut wrong_wallet = Wallet::new_from_private_key(wrong_secret_key, None);
+
+
+    let mut config = Config::local_node();
+    config.predicates = true;
+    config.utxo_validation = true;
+
+    let srv = FuelService::new_node(config).await.unwrap();
+    let client = FuelClient::from(srv.bound_address);
+    let provider = Provider::new(client.clone());
+    
+    let asset_id = AssetId::default();
+    let (initial_wallet, second_signer, third_signer) = configure_wallets(provider.clone()).await;
+    wrong_wallet.set_provider(provider.clone());
+    let amount_to_predicate = 1000;
+    
+    send_coins_to_predicate_hash(asset_id, initial_wallet.clone(), provider.clone(), amount_to_predicate).await;
+
+    // Check there are UTXO locked with the predicate hash
+    let predicate_code = fs::read("./out/debug/multisignature_predicate.bin").unwrap();
+    let predicate_hash = (*Contract::root_from_code(&predicate_code)).into();
+    let mut predicate_balance = provider.get_asset_balance(&predicate_hash, asset_id, ).await.unwrap();
+
+    assert_eq!(predicate_balance, amount_to_predicate);
+    let mut predicate_spending_tx = craft_predicate_spending_tx(receiver_address, asset_id, predicate_balance, provider.clone()).await;
+    let receiver_balance_before = provider.get_asset_balance(&receiver_address, asset_id).await.unwrap();
+
+    // Execute tx
+    let __signature =  second_signer.sign_transaction(&mut predicate_spending_tx).await.unwrap(); 
+    let _second_signature = second_signer.sign_transaction(&mut predicate_spending_tx).await.unwrap(); 
+    let _tx_receipts = provider.send_transaction(&predicate_spending_tx).await.unwrap();
+
+    // Check the balance of the receiver 
+    let receiver_balance_after = provider.get_asset_balance(&receiver_address, asset_id, ).await.unwrap();
+    assert_eq!(receiver_balance_before + predicate_balance, receiver_balance_after);
+
+    // Check we spent the entire predicate hash input
+    predicate_balance = provider.get_asset_balance(&predicate_hash, asset_id).await.unwrap();
+    assert_eq!(predicate_balance, 0);
+}
+
+#[tokio::test]
+#[should_panic(expected = "InvalidPredicate")]
+async fn dual_signer_with_same_wallet_twice_third() {
+    let receiver_address = Address::from_str("0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e").unwrap();
+
+    let wrong_secret_key = 
+        SecretKey::from_str("0xde97d8624a438121b86a1956544bd72ed68cd69f2c99555b08b1e8c51ffd511c")
+            .unwrap();
+
+    let mut wrong_wallet = Wallet::new_from_private_key(wrong_secret_key, None);
+
+
+    let mut config = Config::local_node();
+    config.predicates = true;
+    config.utxo_validation = true;
+
+    let srv = FuelService::new_node(config).await.unwrap();
+    let client = FuelClient::from(srv.bound_address);
+    let provider = Provider::new(client.clone());
+    
+    let asset_id = AssetId::default();
+    let (initial_wallet, second_signer, third_signer) = configure_wallets(provider.clone()).await;
+    wrong_wallet.set_provider(provider.clone());
+    let amount_to_predicate = 1000;
+    
+    send_coins_to_predicate_hash(asset_id, initial_wallet.clone(), provider.clone(), amount_to_predicate).await;
+
+    // Check there are UTXO locked with the predicate hash
+    let predicate_code = fs::read("./out/debug/multisignature_predicate.bin").unwrap();
+    let predicate_hash = (*Contract::root_from_code(&predicate_code)).into();
+    let mut predicate_balance = provider.get_asset_balance(&predicate_hash, asset_id, ).await.unwrap();
+
+    assert_eq!(predicate_balance, amount_to_predicate);
+    let mut predicate_spending_tx = craft_predicate_spending_tx(receiver_address, asset_id, predicate_balance, provider.clone()).await;
+    let receiver_balance_before = provider.get_asset_balance(&receiver_address, asset_id).await.unwrap();
+
+    // Execute tx
+    let __signature =  third_signer.sign_transaction(&mut predicate_spending_tx).await.unwrap(); 
+    let _second_signature = third_signer.sign_transaction(&mut predicate_spending_tx).await.unwrap(); 
+    let _tx_receipts = provider.send_transaction(&predicate_spending_tx).await.unwrap();
+
+    // Check the balance of the receiver 
+    let receiver_balance_after = provider.get_asset_balance(&receiver_address, asset_id, ).await.unwrap();
+    assert_eq!(receiver_balance_before + predicate_balance, receiver_balance_after);
+
+    // Check we spent the entire predicate hash input
+    predicate_balance = provider.get_asset_balance(&predicate_hash, asset_id).await.unwrap();
+    assert_eq!(predicate_balance, 0);
+}
+
+
+#[tokio::test]
 async fn triple_signer() {
     let receiver_address = Address::from_str("0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e").unwrap();
 

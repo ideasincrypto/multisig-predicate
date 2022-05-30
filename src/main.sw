@@ -22,6 +22,37 @@ fn get_predicate_data_length() -> u64 {
     }
 }
 
+fn get_predicate_code_length() -> u64 {
+    asm(r1, r2) {
+        subi r1 is i16;
+        lw r2 r1 i0;
+        r2: u64
+    }
+}
+
+fn get_predicate_data() -> u32 {
+    let mut predicate_code_length_bytes = get_predicate_code_length()*4;
+    let reminder = asm(r1, r2: predicate_code_length_bytes, r3: 8) {
+        mod r1 r2 r3;
+        r1: u64
+    };
+    predicate_code_length_bytes = predicate_code_length_bytes + reminder; 
+    
+    let ptr = asm(r1, r2: predicate_code_length_bytes) {
+        add r1 is r2;
+        r1: u32
+    };
+    ptr
+}
+
+fn get_signature_index(signatures_indexes_ptr: u32, index: u64) -> u64 {
+    asm(r1, r2: signatures_indexes_ptr, r3: index, r4) {
+        add r1 r2 r3;
+        lb r4 r1 i0;
+        r4: u64
+    }
+}
+
 fn get_signature(index: u64) -> B512 {
   
     asm(r1: index, r2, r3) {
@@ -57,10 +88,12 @@ fn main() -> bool {
     let sig_threshold = 2;
 
     let msg_hash: b256 = tx_hash();
-    let witnesses_count = tx_witnesses_count();
-    let mut valid_counter = 0;
+    let witnesses_count = get_predicate_data_length();
+    let signatures_indexes_ptr = get_predicate_data();
 
-    let sig0 = get_signature(0); 
+    let mut valid_counter = 0;
+    let index_zero = get_signature_index(signatures_indexes_ptr, 0);
+    let sig0 = get_signature(index_zero); 
 
     if (raw_addresses[0] == ec_recover_address(sig0, msg_hash)) {
             zero_address_mask = true;
@@ -74,7 +107,8 @@ fn main() -> bool {
     }
     
     if (witnesses_count >= 2) {
-        let sig1 = get_signature(1); 
+        let index_one = get_signature_index(signatures_indexes_ptr, 1);
+        let sig1 = get_signature(index_one); 
         if ((raw_addresses[0] == ec_recover_address(sig1, msg_hash)) && !zero_address_mask) {
             zero_address_mask = true;
             valid_counter = valid_counter + 1;
@@ -88,7 +122,8 @@ fn main() -> bool {
     }
 
     if (witnesses_count >= 3) {
-        let sig2 = get_signature(2); 
+        let index_two = get_signature_index(signatures_indexes_ptr, 2);
+        let sig2 = get_signature(index_two); 
         if ((raw_addresses[0] == ec_recover_address(sig2, msg_hash)) && !zero_address_mask) {
             valid_counter = valid_counter + 1;
         } else if ((raw_addresses[1] == ec_recover_address(sig2, msg_hash)) && !one_address_mask) {
